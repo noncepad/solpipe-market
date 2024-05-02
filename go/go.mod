@@ -1,4 +1,4 @@
-module github.com/noncepad/solpipe-market
+module github.com/noncepad/solpipe-market/go
 
 go 1.22.1
 
