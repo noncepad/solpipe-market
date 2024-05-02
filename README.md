@@ -13,7 +13,7 @@ protoc --experimental_allow_proto3_optional --proto_path=./geyser/proto --go-grp
 protoc --experimental_allow_proto3_optional --proto_path=./solpipe/proto --go-grpc_out=. --go_out=. $(ls ./solpipe/proto)
 rm -r ./go/src || true
 mkdir ./go/src
-mv github.com/noncepad/solpipe-market/proto go/src/
+mv github.com/noncepad/solpipe-market/proto ./go/src/
 ```
 
 
