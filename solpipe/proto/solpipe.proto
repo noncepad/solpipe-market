@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package solpipestate;
 
-option go_package = "github.com/noncepad/solpipe-market/go/proto/solpipe";
+option go_package = "github.com/noncepad/solpipe-market/proto/solpipe";
 
 service Tree{
     // just get a single request

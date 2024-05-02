@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package txproc;
 
-option go_package = "github.com/noncepad/solpipe-market/go/proto/txproc";
+option go_package = "github.com/noncepad/solpipe-market/proto/txproc";
 
 service TransactionProcessing{
     rpc Broadcast(BroadcastRequest) returns (TransactionResult) {}
