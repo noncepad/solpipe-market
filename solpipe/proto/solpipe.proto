@@ -2,9 +2,10 @@ syntax = "proto3";
 
 package solpipestate;
 
-option go_package = "github.com/noncepad/solpipe-market/proto/solpipe";
+option go_package = "github.com/noncepad/solpipe-market/go/proto/solpipe";
 
 service Tree{
+    rpc Search(SearchRequest) returns (stream TreeId) {}
     // just get a single request
     rpc Get(SingleRequest) returns (Notification) {}
     // receive requested notifications and chain state updates
@@ -14,6 +15,29 @@ service Tree{
     rpc OnToken(TokenRequest) returns (stream TokenResponse) {}
     rpc OnSlot(SlotRequest) returns (stream SlotResponse) {}
 
+}
+
+message SearchRequest{
+    repeated TreeSearch search = 1;
+}
+
+message TreeId{
+    bytes id = 1;
+}
+
+message TreeSearch{
+    oneof parameter{
+        TreeSearchByText text = 1;
+        TreeSearchByFlags flag = 2;
+    }
+}
+
+message TreeSearchByText{
+    string token = 1;
+}
+
+message TreeSearchByFlags{
+    bytes flags = 1;
 }
 
 message SlotRequest{

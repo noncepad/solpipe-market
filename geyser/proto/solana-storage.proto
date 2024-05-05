@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package solana.storage.ConfirmedBlock;
 
-option go_package = "github.com/noncepad/solpipe-market/proto/geyserstorage";
+option go_package = "github.com/noncepad/solpipe-market/go/proto/geyserstorage";
 
 message ConfirmedBlock {
     string previous_blockhash = 1;
