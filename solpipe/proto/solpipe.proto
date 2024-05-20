@@ -19,6 +19,7 @@ service Tree{
 
 message SearchRequest{
     repeated TreeSearch search = 1;
+    repeated TreeSearchReturnParameter return_parameter = 2;
 }
 
 message TreeId{
@@ -39,6 +40,25 @@ message TreeSearchByText{
 message TreeSearchByFlags{
     bytes flags = 1;
 }
+
+message TreeSearchReturnOrderBy{
+    enum Order{
+        BY_TITLE=0;
+        BY_VOLUME=1;
+        BY_PIPELINE_COUNT=2;
+    }
+
+    bool ascending = 1;
+    Order parameter = 2;
+}
+
+message TreeSearchReturnParameter{
+    oneof parameter{
+        TreeSearchReturnOrderBy order_by = 1;
+        uint32 limit = 2;
+    }
+}
+
 
 message SlotRequest{
     Commitment commitment = 1;
