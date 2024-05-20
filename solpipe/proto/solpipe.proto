@@ -15,58 +15,12 @@ service Tree{
     rpc OnSlot(SlotRequest) returns (stream SlotResponse) {}
 }
 
-service SolpipeSearch{
-    rpc MarketSearch(MarketSearchRequest) returns (stream Id) {}
-}
+
 
 message Id{
     bytes id = 1;
 }
 
-
-message MarketSearchRequest{
-    repeated MarketSearchParamter search = 1;
-    repeated MarketSearchReturnParameter return_parameter = 2;
-}
-
-
-
-message MarketSearchParamter{
-    oneof parameter{
-        MarketSearchByText text = 1;
-        MarketSearchByFlags flag = 2;
-    }
-}
-
-message MarketSearchByText{
-    string token = 1;
-}
-
-message MarketSearchByFlags{
-    bytes flags = 1;
-}
-
-message MarketSearchReturnOrderBy{
-    enum Order{
-        BY_TITLE=0;
-        BY_VOLUME=1;
-        BY_PIPELINE_COUNT=2;
-    }
-
-    bool ascending = 1;
-    Order parameter = 2;
-}
-
-message MarketSearchReturnParameter{
-    oneof parameter{
-        MarketSearchReturnOrderBy order_by = 1;
-        uint32 limit = 2;
-    }
-}
-
-message MarketSearchReturn{
-    repeated MarketSearchReturnParameter parameter = 1;
-}
 
 message SlotRequest{
     Commitment commitment = 1;
