@@ -5,7 +5,6 @@ package solpipestate;
 option go_package = "github.com/noncepad/solpipe-market/go/proto/solpipe";
 
 service Tree{
-    rpc Search(SearchRequest) returns (stream TreeId) {}
     // just get a single request
     rpc Get(SingleRequest) returns (Notification) {}
     // receive requested notifications and chain state updates
@@ -14,34 +13,40 @@ service Tree{
     rpc OnSol(SolRequest) returns (stream SolResponse) {}
     rpc OnToken(TokenRequest) returns (stream TokenResponse) {}
     rpc OnSlot(SlotRequest) returns (stream SlotResponse) {}
-
 }
 
-message SearchRequest{
-    repeated TreeSearch search = 1;
-    repeated TreeSearchReturnParameter return_parameter = 2;
+service SolpipeSearch{
+    rpc MarketSearch(MarketSearchRequest) returns (stream Id) {}
 }
 
-message TreeId{
+message Id{
     bytes id = 1;
 }
 
-message TreeSearch{
+
+message MarketSearchRequest{
+    repeated MarketSearchParamter search = 1;
+    repeated MarketSearchReturnParameter return_parameter = 2;
+}
+
+
+
+message MarketSearchParamter{
     oneof parameter{
-        TreeSearchByText text = 1;
-        TreeSearchByFlags flag = 2;
+        MarketSearchByText text = 1;
+        MarketSearchByFlags flag = 2;
     }
 }
 
-message TreeSearchByText{
+message MarketSearchByText{
     string token = 1;
 }
 
-message TreeSearchByFlags{
+message MarketSearchByFlags{
     bytes flags = 1;
 }
 
-message TreeSearchReturnOrderBy{
+message MarketSearchReturnOrderBy{
     enum Order{
         BY_TITLE=0;
         BY_VOLUME=1;
@@ -52,13 +57,16 @@ message TreeSearchReturnOrderBy{
     Order parameter = 2;
 }
 
-message TreeSearchReturnParameter{
+message MarketSearchReturnParameter{
     oneof parameter{
-        TreeSearchReturnOrderBy order_by = 1;
+        MarketSearchReturnOrderBy order_by = 1;
         uint32 limit = 2;
     }
 }
 
+message MarketSearchReturn{
+    repeated MarketSearchReturnParameter parameter = 1;
+}
 
 message SlotRequest{
     Commitment commitment = 1;

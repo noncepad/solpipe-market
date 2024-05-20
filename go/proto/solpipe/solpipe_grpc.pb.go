@@ -19,7 +19,6 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Tree_Search_FullMethodName          = "/solpipestate.Tree/Search"
 	Tree_Get_FullMethodName             = "/solpipestate.Tree/Get"
 	Tree_GetTreeByPubkey_FullMethodName = "/solpipestate.Tree/GetTreeByPubkey"
 	Tree_Stream_FullMethodName          = "/solpipestate.Tree/Stream"
@@ -32,7 +31,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TreeClient interface {
-	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (Tree_SearchClient, error)
 	// just get a single request
 	Get(ctx context.Context, in *SingleRequest, opts ...grpc.CallOption) (*Notification, error)
 	// receive requested notifications and chain state updates
@@ -49,38 +47,6 @@ type treeClient struct {
 
 func NewTreeClient(cc grpc.ClientConnInterface) TreeClient {
 	return &treeClient{cc}
-}
-
-func (c *treeClient) Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (Tree_SearchClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Tree_ServiceDesc.Streams[0], Tree_Search_FullMethodName, opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &treeSearchClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type Tree_SearchClient interface {
-	Recv() (*TreeId, error)
-	grpc.ClientStream
-}
-
-type treeSearchClient struct {
-	grpc.ClientStream
-}
-
-func (x *treeSearchClient) Recv() (*TreeId, error) {
-	m := new(TreeId)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
 }
 
 func (c *treeClient) Get(ctx context.Context, in *SingleRequest, opts ...grpc.CallOption) (*Notification, error) {
@@ -102,7 +68,7 @@ func (c *treeClient) GetTreeByPubkey(ctx context.Context, in *TreeRequest, opts 
 }
 
 func (c *treeClient) Stream(ctx context.Context, opts ...grpc.CallOption) (Tree_StreamClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Tree_ServiceDesc.Streams[1], Tree_Stream_FullMethodName, opts...)
+	stream, err := c.cc.NewStream(ctx, &Tree_ServiceDesc.Streams[0], Tree_Stream_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +99,7 @@ func (x *treeStreamClient) Recv() (*StreamResponse, error) {
 }
 
 func (c *treeClient) OnSol(ctx context.Context, in *SolRequest, opts ...grpc.CallOption) (Tree_OnSolClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Tree_ServiceDesc.Streams[2], Tree_OnSol_FullMethodName, opts...)
+	stream, err := c.cc.NewStream(ctx, &Tree_ServiceDesc.Streams[1], Tree_OnSol_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +131,7 @@ func (x *treeOnSolClient) Recv() (*SolResponse, error) {
 }
 
 func (c *treeClient) OnToken(ctx context.Context, in *TokenRequest, opts ...grpc.CallOption) (Tree_OnTokenClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Tree_ServiceDesc.Streams[3], Tree_OnToken_FullMethodName, opts...)
+	stream, err := c.cc.NewStream(ctx, &Tree_ServiceDesc.Streams[2], Tree_OnToken_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +163,7 @@ func (x *treeOnTokenClient) Recv() (*TokenResponse, error) {
 }
 
 func (c *treeClient) OnSlot(ctx context.Context, in *SlotRequest, opts ...grpc.CallOption) (Tree_OnSlotClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Tree_ServiceDesc.Streams[4], Tree_OnSlot_FullMethodName, opts...)
+	stream, err := c.cc.NewStream(ctx, &Tree_ServiceDesc.Streams[3], Tree_OnSlot_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +198,6 @@ func (x *treeOnSlotClient) Recv() (*SlotResponse, error) {
 // All implementations must embed UnimplementedTreeServer
 // for forward compatibility
 type TreeServer interface {
-	Search(*SearchRequest, Tree_SearchServer) error
 	// just get a single request
 	Get(context.Context, *SingleRequest) (*Notification, error)
 	// receive requested notifications and chain state updates
@@ -248,9 +213,6 @@ type TreeServer interface {
 type UnimplementedTreeServer struct {
 }
 
-func (UnimplementedTreeServer) Search(*SearchRequest, Tree_SearchServer) error {
-	return status.Errorf(codes.Unimplemented, "method Search not implemented")
-}
 func (UnimplementedTreeServer) Get(context.Context, *SingleRequest) (*Notification, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
@@ -280,27 +242,6 @@ type UnsafeTreeServer interface {
 
 func RegisterTreeServer(s grpc.ServiceRegistrar, srv TreeServer) {
 	s.RegisterService(&Tree_ServiceDesc, srv)
-}
-
-func _Tree_Search_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SearchRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(TreeServer).Search(m, &treeSearchServer{stream})
-}
-
-type Tree_SearchServer interface {
-	Send(*TreeId) error
-	grpc.ServerStream
-}
-
-type treeSearchServer struct {
-	grpc.ServerStream
-}
-
-func (x *treeSearchServer) Send(m *TreeId) error {
-	return x.ServerStream.SendMsg(m)
 }
 
 func _Tree_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -446,11 +387,6 @@ var Tree_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Search",
-			Handler:       _Tree_Search_Handler,
-			ServerStreams: true,
-		},
-		{
 			StreamName:    "Stream",
 			Handler:       _Tree_Stream_Handler,
 			ServerStreams: true,
@@ -469,6 +405,123 @@ var Tree_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "OnSlot",
 			Handler:       _Tree_OnSlot_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "solpipe.proto",
+}
+
+const (
+	SolpipeSearch_MarketSearch_FullMethodName = "/solpipestate.SolpipeSearch/MarketSearch"
+)
+
+// SolpipeSearchClient is the client API for SolpipeSearch service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type SolpipeSearchClient interface {
+	MarketSearch(ctx context.Context, in *MarketSearchRequest, opts ...grpc.CallOption) (SolpipeSearch_MarketSearchClient, error)
+}
+
+type solpipeSearchClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewSolpipeSearchClient(cc grpc.ClientConnInterface) SolpipeSearchClient {
+	return &solpipeSearchClient{cc}
+}
+
+func (c *solpipeSearchClient) MarketSearch(ctx context.Context, in *MarketSearchRequest, opts ...grpc.CallOption) (SolpipeSearch_MarketSearchClient, error) {
+	stream, err := c.cc.NewStream(ctx, &SolpipeSearch_ServiceDesc.Streams[0], SolpipeSearch_MarketSearch_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &solpipeSearchMarketSearchClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type SolpipeSearch_MarketSearchClient interface {
+	Recv() (*Id, error)
+	grpc.ClientStream
+}
+
+type solpipeSearchMarketSearchClient struct {
+	grpc.ClientStream
+}
+
+func (x *solpipeSearchMarketSearchClient) Recv() (*Id, error) {
+	m := new(Id)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// SolpipeSearchServer is the server API for SolpipeSearch service.
+// All implementations must embed UnimplementedSolpipeSearchServer
+// for forward compatibility
+type SolpipeSearchServer interface {
+	MarketSearch(*MarketSearchRequest, SolpipeSearch_MarketSearchServer) error
+	mustEmbedUnimplementedSolpipeSearchServer()
+}
+
+// UnimplementedSolpipeSearchServer must be embedded to have forward compatible implementations.
+type UnimplementedSolpipeSearchServer struct {
+}
+
+func (UnimplementedSolpipeSearchServer) MarketSearch(*MarketSearchRequest, SolpipeSearch_MarketSearchServer) error {
+	return status.Errorf(codes.Unimplemented, "method MarketSearch not implemented")
+}
+func (UnimplementedSolpipeSearchServer) mustEmbedUnimplementedSolpipeSearchServer() {}
+
+// UnsafeSolpipeSearchServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to SolpipeSearchServer will
+// result in compilation errors.
+type UnsafeSolpipeSearchServer interface {
+	mustEmbedUnimplementedSolpipeSearchServer()
+}
+
+func RegisterSolpipeSearchServer(s grpc.ServiceRegistrar, srv SolpipeSearchServer) {
+	s.RegisterService(&SolpipeSearch_ServiceDesc, srv)
+}
+
+func _SolpipeSearch_MarketSearch_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(MarketSearchRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SolpipeSearchServer).MarketSearch(m, &solpipeSearchMarketSearchServer{stream})
+}
+
+type SolpipeSearch_MarketSearchServer interface {
+	Send(*Id) error
+	grpc.ServerStream
+}
+
+type solpipeSearchMarketSearchServer struct {
+	grpc.ServerStream
+}
+
+func (x *solpipeSearchMarketSearchServer) Send(m *Id) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+// SolpipeSearch_ServiceDesc is the grpc.ServiceDesc for SolpipeSearch service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var SolpipeSearch_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "solpipestate.SolpipeSearch",
+	HandlerType: (*SolpipeSearchServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "MarketSearch",
+			Handler:       _SolpipeSearch_MarketSearch_Handler,
 			ServerStreams: true,
 		},
 	},
