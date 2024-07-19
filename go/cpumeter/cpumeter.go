@@ -26,7 +26,7 @@ type external struct {
 }
 
 type subG struct {
-	id     int
+	id     uint32
 	ctx    context.Context
 	cancel context.CancelFunc
 	outC   chan<- float32
@@ -59,11 +59,13 @@ func (e1 *external) loopInternal() {
 	utilizationRatio := float32(0)
 	isFirst := true
 	var err error
+	log.Print("entering cpumeter loop internal")
 out:
 	for e1.ctx.Err() == nil {
 		if !isFirst {
 			select {
 			case <-doneC:
+				log.Print("loopInternal - 1")
 				break out
 			case <-timeC:
 				timeC = time.After(CHECK_INTERVAL)
@@ -86,6 +88,7 @@ out:
 				select {
 				case sub.outC <- utilizationRatio:
 				default:
+					log.Print("loopInternal - 2")
 					sub.cancel()
 					delete(e1.subM, sub.id)
 				}
@@ -97,6 +100,7 @@ out:
 		e1.m.Unlock()
 
 	}
+	log.Print("exiting loopInternal - 3")
 }
 
 func (e1 *external) unsafeRatio() (float32, error) {
