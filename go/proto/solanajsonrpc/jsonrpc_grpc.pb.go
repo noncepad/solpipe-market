@@ -27,8 +27,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type JsonRpcClient interface {
-	Get(ctx context.Context, in *Header, opts ...grpc.CallOption) (*Response, error)
-	Post(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
+	Get(ctx context.Context, in *Header, opts ...grpc.CallOption) (JsonRpc_GetClient, error)
+	Post(ctx context.Context, opts ...grpc.CallOption) (JsonRpc_PostClient, error)
 }
 
 type jsonRpcClient struct {
@@ -39,30 +39,75 @@ func NewJsonRpcClient(cc grpc.ClientConnInterface) JsonRpcClient {
 	return &jsonRpcClient{cc}
 }
 
-func (c *jsonRpcClient) Get(ctx context.Context, in *Header, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
-	err := c.cc.Invoke(ctx, JsonRpc_Get_FullMethodName, in, out, opts...)
+func (c *jsonRpcClient) Get(ctx context.Context, in *Header, opts ...grpc.CallOption) (JsonRpc_GetClient, error) {
+	stream, err := c.cc.NewStream(ctx, &JsonRpc_ServiceDesc.Streams[0], JsonRpc_Get_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &jsonRpcGetClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
 }
 
-func (c *jsonRpcClient) Post(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
-	err := c.cc.Invoke(ctx, JsonRpc_Post_FullMethodName, in, out, opts...)
+type JsonRpc_GetClient interface {
+	Recv() (*Response, error)
+	grpc.ClientStream
+}
+
+type jsonRpcGetClient struct {
+	grpc.ClientStream
+}
+
+func (x *jsonRpcGetClient) Recv() (*Response, error) {
+	m := new(Response)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *jsonRpcClient) Post(ctx context.Context, opts ...grpc.CallOption) (JsonRpc_PostClient, error) {
+	stream, err := c.cc.NewStream(ctx, &JsonRpc_ServiceDesc.Streams[1], JsonRpc_Post_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &jsonRpcPostClient{stream}
+	return x, nil
+}
+
+type JsonRpc_PostClient interface {
+	Send(*Request) error
+	Recv() (*Response, error)
+	grpc.ClientStream
+}
+
+type jsonRpcPostClient struct {
+	grpc.ClientStream
+}
+
+func (x *jsonRpcPostClient) Send(m *Request) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *jsonRpcPostClient) Recv() (*Response, error) {
+	m := new(Response)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // JsonRpcServer is the server API for JsonRpc service.
 // All implementations must embed UnimplementedJsonRpcServer
 // for forward compatibility
 type JsonRpcServer interface {
-	Get(context.Context, *Header) (*Response, error)
-	Post(context.Context, *Request) (*Response, error)
+	Get(*Header, JsonRpc_GetServer) error
+	Post(JsonRpc_PostServer) error
 	mustEmbedUnimplementedJsonRpcServer()
 }
 
@@ -70,11 +115,11 @@ type JsonRpcServer interface {
 type UnimplementedJsonRpcServer struct {
 }
 
-func (UnimplementedJsonRpcServer) Get(context.Context, *Header) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+func (UnimplementedJsonRpcServer) Get(*Header, JsonRpc_GetServer) error {
+	return status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedJsonRpcServer) Post(context.Context, *Request) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Post not implemented")
+func (UnimplementedJsonRpcServer) Post(JsonRpc_PostServer) error {
+	return status.Errorf(codes.Unimplemented, "method Post not implemented")
 }
 func (UnimplementedJsonRpcServer) mustEmbedUnimplementedJsonRpcServer() {}
 
@@ -89,40 +134,51 @@ func RegisterJsonRpcServer(s grpc.ServiceRegistrar, srv JsonRpcServer) {
 	s.RegisterService(&JsonRpc_ServiceDesc, srv)
 }
 
-func _JsonRpc_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Header)
-	if err := dec(in); err != nil {
-		return nil, err
+func _JsonRpc_Get_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Header)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(JsonRpcServer).Get(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: JsonRpc_Get_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(JsonRpcServer).Get(ctx, req.(*Header))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(JsonRpcServer).Get(m, &jsonRpcGetServer{stream})
 }
 
-func _JsonRpc_Post_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Request)
-	if err := dec(in); err != nil {
+type JsonRpc_GetServer interface {
+	Send(*Response) error
+	grpc.ServerStream
+}
+
+type jsonRpcGetServer struct {
+	grpc.ServerStream
+}
+
+func (x *jsonRpcGetServer) Send(m *Response) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _JsonRpc_Post_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(JsonRpcServer).Post(&jsonRpcPostServer{stream})
+}
+
+type JsonRpc_PostServer interface {
+	Send(*Response) error
+	Recv() (*Request, error)
+	grpc.ServerStream
+}
+
+type jsonRpcPostServer struct {
+	grpc.ServerStream
+}
+
+func (x *jsonRpcPostServer) Send(m *Response) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *jsonRpcPostServer) Recv() (*Request, error) {
+	m := new(Request)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(JsonRpcServer).Post(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: JsonRpc_Post_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(JsonRpcServer).Post(ctx, req.(*Request))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 // JsonRpc_ServiceDesc is the grpc.ServiceDesc for JsonRpc service.
@@ -131,16 +187,19 @@ func _JsonRpc_Post_Handler(srv interface{}, ctx context.Context, dec func(interf
 var JsonRpc_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "solanajsonrpc.JsonRpc",
 	HandlerType: (*JsonRpcServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "Get",
-			Handler:    _JsonRpc_Get_Handler,
+			StreamName:    "Get",
+			Handler:       _JsonRpc_Get_Handler,
+			ServerStreams: true,
 		},
 		{
-			MethodName: "Post",
-			Handler:    _JsonRpc_Post_Handler,
+			StreamName:    "Post",
+			Handler:       _JsonRpc_Post_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "jsonrpc.proto",
 }
