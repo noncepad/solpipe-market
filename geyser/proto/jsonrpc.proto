@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+
+option go_package = "github.com/noncepad/solpipe-market/go/proto/solanajsonrpc";
+
+package solanajsonrpc;
+
+service JsonRpc{
+  rpc Get(Header) returns (Response) {}
+  rpc Post(Request) returns (Response) {}
+}
+
+
+message Request{
+  Header header = 1;
+  Body body = 2;
+}
+
+message Response{
+  int32 code = 1;
+  Header header = 2;
+  Body body = 3;
+}
+message Header{
+  string path = 1;
+  map<string,string> parameters = 2;
+}
+
+message Body{
+  bytes body = 1;
+}
