@@ -1,1 +1,1 @@
-Talk to a market state server over gRPC.
+Enables secure hosting of WASM trading bots as guests within validator hosts for low-latency crypto trading.

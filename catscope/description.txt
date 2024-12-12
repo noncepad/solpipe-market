@@ -1,1 +1,1 @@
-Talk to a market state server over gRPC.
+Filters and syncs specified account data with the Solana Geyser plugin.
