@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+option go_package = "github.com/noncepad/solpipe-market/go/proto/bot";
+
+package bot;
+
+message Empty {}
+
+service Bot {
+  rpc Upload(stream BotUploadRequest) returns (BotStatus) {}
+  rpc GetStatus(Empty) returns (BotStatus) {}
+  rpc Start(stream Stdin) returns (BotStatus) {}
+  rpc Stop(Empty) returns (BotStatus) {}
+}
+
+message BotUploadRequest {
+  oneof payload {
+    BotHeader header = 1;
+    BotBody body = 2;
+  }
+}
+
+message BotHeader {
+  // this is a sha256 sum of the wasm body.
+  bytes hash = 1;
+  // make the size as 0 when there is no bot being stored in the validator.
+  uint32 size = 2;
+}
+message BotBody { bytes data = 1; }
+
+message BotStatus {
+  BotHeader header = 1;
+  // if this is 0, then the bot is not running.
+  int64 running_since = 2;
+}
+
+message BotOut {
+  oneof out {
+    BotStatus status = 1;
+    Stdout stdout = 2;
+  }
+}
+
+message Stdin { bytes data = 1; }
+message Stdout {
+  bytes data = 1;
+  bool is_stderr = 2;
+}
