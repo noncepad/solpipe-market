@@ -9,7 +9,8 @@ service Tree {
   rpc Get(SingleRequest) returns (Notification) {}
   // receive requested notifications and chain state updates
   rpc GetTreeByPubkey(TreeRequest) returns (TreeResponse) {}
-  rpc Stream(stream StreamRequest) returns (stream StreamResponse) {} rpc OnSol(SolRequest) returns (stream SolResponse) {}
+  rpc Stream(stream StreamRequest) returns (stream StreamResponse) {}
+  rpc OnSol(SolRequest) returns (stream SolResponse) {}
   rpc OnToken(TokenRequest) returns (stream TokenResponse) {}
   rpc OnSlot(SlotRequest) returns (stream SlotResponse) {}
 }
@@ -73,15 +74,15 @@ message StreamRequest {
 message StreamResponse {
   oneof data {
     Notification notification = 1;
-    TreeNotFound tree =
-        2; // indicates that the tree is empty; root account does not exist
+    // indicates that the tree is empty; root account does not exist
+    TreeNotFound tree = 2;
   }
 }
 
 message NotificationFilter {
-  uint32 filter_id = 1;
+  uint64 filter_id = 1;
   uint32 max_depth = 2;
-  repeated uint32 id = 3;
+  repeated uint64 id = 3;
 }
 
 message SingleRequest {
@@ -92,7 +93,7 @@ message SingleRequest {
 message NotificationRequest {
   bytes tree_root_id = 1;
   uint64 last_tx_id = 2;
-  repeated uint32 id = 4;
+  repeated uint64 id = 4;
 }
 
 message Notification {
@@ -103,22 +104,21 @@ message Notification {
 }
 
 message PayloadUpdate {
-  uint32 id = 1;
+  uint64 id = 1;
   uint64 last_tx_id = 2;
   bytes payload = 3;
 }
 
 message DeleteWithTxid {
-  uint32 id = 1;
+  uint64 id = 1;
   uint64 tx_id = 2;
   bytes pubkey = 3;
 }
 
 message Node {
   uint64 last_tx_id = 1;
-  repeated uint32 id = 2;
-  repeated uint32 children = 3;
+  repeated uint64 id = 2;
+  repeated uint64 children = 3;
 }
 
 message TreeNotFound { bytes tree_id = 1; }
-

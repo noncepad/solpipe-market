@@ -4,60 +4,53 @@ option go_package = "github.com/noncepad/solpipe-market/go/proto/relay";
 
 package relay;
 
-message Empty{}
+message Empty {}
 
-
-
-service Capacity{
-    rpc OnStatus(Empty) returns (stream CapacityStatus) {}
+service Capacity {
+  rpc OnStatus(CapacityRequest) returns (stream CapacityStatus) {}
 }
 
-message CapacityStatus{
-    float utilization_ratio = 1;
+message CapacityRequest {}
+
+message CapacityStatus { float utilization_ratio = 1; }
+
+service Meter {
+  rpc GetStatus(StatusRequest) returns (Usage) {}
+  rpc OnStatus(StatusRequest) returns (stream Usage) {}
 }
-
-service Meter{
-    rpc GetStatus(Empty) returns (Usage) {}
-    rpc OnStatus(Empty) returns (stream Usage) {}
+message StatusRequest {}
+message Usage {
+  uint64 usage = 1;
+  float utilization_rate =
+      2; // how much of the alloted bandwidth has the bidder used
 }
-
-message Usage{
-    uint64 usage = 1;
-    float utilization_rate = 2; // how much of the alloted bandwidth has the bidder used
-}
-
-
 
 /*
-Consumers that purchased bandwidth use this protobuf to send transactions to the staked validator.
+Consumers that purchased bandwidth use this protobuf to send transactions to the
+staked validator.
 * Client=consumers
 * Server=staked validator proxy server
 */
-service Endpoint{
-    // let consumers connect over clearnet
-    rpc GetClearNetAddress(EndpointRequest) returns (EndpointResponse) {}
-
-    
+service Endpoint {
+  // let consumers connect over clearnet
+  rpc GetClearNetAddress(EndpointRequest) returns (EndpointResponse) {}
 }
 
-message EndpointRequest{
-    bytes certificate = 1;
-    bytes pubkey = 2;
-    bytes nonce = 3;
-    bytes signature = 4;
+message EndpointRequest {
+  bytes certificate = 1;
+  bytes pubkey = 2;
+  bytes nonce = 3;
+  bytes signature = 4;
 }
 
-message EndpointResponse{
-    repeated string url = 1;
+message EndpointResponse { repeated string url = 1; }
+
+service Information {
+  rpc Get(InformationRequest) returns (ApiDescription) {}
 }
-
-
-service Information{
-    rpc Get(Empty) returns (ApiDescription) {}
-}
-
-message ApiDescription{
-    string title = 1;
-    string description = 2;
-    uint64 feature_flag = 3;
+message InformationRequest {}
+message ApiDescription {
+  string title = 1;
+  string description = 2;
+  uint64 feature_flag = 3;
 }
