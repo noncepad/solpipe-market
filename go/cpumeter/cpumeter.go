@@ -54,7 +54,7 @@ func Add(parentCtx context.Context, s *grpc.Server) error {
 
 const CHECK_INTERVAL time.Duration = 30 * time.Second
 
-func (e1 external) OnStatus(req *pbr.Empty, stream pbr.Capacity_OnStatusServer) error {
+func (e1 external) OnStatus(req *pbr.CapacityRequest, stream pbr.Capacity_OnStatusServer) error {
 	ctx, cancel := context.WithCancel(stream.Context())
 	doneC := ctx.Done()
 	outC := make(chan float32, 100)

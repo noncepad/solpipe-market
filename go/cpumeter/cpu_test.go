@@ -38,7 +38,7 @@ func TestCpu(t *testing.T) {
 	}
 	client := pbr.NewCapacityClient(conn)
 
-	stream, err := client.OnStatus(ctx, &pbr.Empty{})
+	stream, err := client.OnStatus(ctx, &pbr.CapacityRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
