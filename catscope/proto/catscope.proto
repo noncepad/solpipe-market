@@ -2,123 +2,82 @@ syntax = "proto3";
 
 option go_package = "github.com/noncepad/solpipe-market/go/proto/catscope";
 
-package catscope;
+package catscopestate;
 
-service Tree {
-  // just get a single request
-  rpc Get(SingleRequest) returns (Notification) {}
-  // receive requested notifications and chain state updates
-  rpc GetTreeByPubkey(TreeRequest) returns (TreeResponse) {}
-  rpc Stream(stream StreamRequest) returns (stream StreamResponse) {}
-  rpc OnSol(SolRequest) returns (stream SolResponse) {}
-  rpc OnToken(TokenRequest) returns (stream TokenResponse) {}
-  rpc OnSlot(SlotRequest) returns (stream SlotResponse) {}
-}
+message Empty {}
 
-message Id { bytes id = 1; }
+message GetRequest { repeated AccountId list_id = 1; }
+message GetResponse { repeated Account list_account = 1; }
 
-message SlotRequest { Commitment commitment = 1; }
-
-message SlotResponse { uint64 slot = 1; }
-
-enum Commitment {
-  PROCESSED = 0;
-  CONFIRMED = 1;
-  FINALIZED = 2;
-}
-
-message TreeRequest { bytes id = 1; }
-
-message TreeResponse {
-  bytes tree_id = 1;
-  repeated uint64 node_id = 2; // id from child to root
-}
-
-message SolRequest { bytes id = 1; }
-
-message SolResponse { uint64 balance = 1; }
-
-message TokenRequest {
-  oneof request {
-    TokenById by_id = 1;
-    TokenByOwner by_owner = 2;
-    TokenByOwnerAndMint by_owner_and_mint = 3;
+message AccountId {
+  oneof id {
+    uint64 node_id = 1;
+    bytes pubkey = 2;
   }
 }
 
-message TokenById { bytes id = 1; }
-
-message TokenByOwner { bytes owner = 1; }
-
-message TokenByOwnerAndMint {
-  bytes owner = 1;
-  bytes mint = 2;
+message Account {
+  bytes header = 1;
+  bytes data = 2;
+  repeated Edge list_edge_add = 3;
+  repeated Edge list_edge_delete = 4;
+  repeated Edge list_edge_keep = 5;
 }
 
-message TokenResponse { repeated TokenBalance balance = 1; }
-
-message TokenBalance {
-  bytes id = 1;
-  bytes owner = 2;
-  bytes mint = 3;
-  uint64 balance = 4;
+message SubscriptionRequest {
+  AccountId root = 1;
+  uint32 filter_weight = 2;
+  uint32 depth = 3;
+  uint64 last_slot = 4;
 }
-
-message StreamRequest {
-  oneof data {
-    NotificationRequest notification_request = 1;
-    NotificationFilter filter = 2;
+message ChainUpdate {
+  oneof update {
+    Slot slot = 1;
+    bytes blockhash = 2;
   }
 }
 
-message StreamResponse {
-  oneof data {
-    Notification notification = 1;
-    // indicates that the tree is empty; root account does not exist
-    TreeNotFound tree = 2;
+message Slot {
+  uint64 slot = 1;
+  uint32 status = 2;
+}
+
+message Edge{
+  uint64 from = 1;
+  uint64 to = 2;
+  uint32 weight = 3;
+}
+
+message SubscriptionResponse {
+  uint64 slot = 1;
+  repeated Account list_account = 2;
+}
+
+message RentRequest { uint64 size = 1; }
+message RentResponse { uint64 size = 1; }
+
+service Graph {
+  // Do graph subset subscritptions. Cannot have system program account or token account as root.
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc Subscribe(stream SubscriptionRequest) returns (stream SubscriptionResponse);
+  // Get blockhash and slot+status updates.
+  rpc Chain(Empty) returns (stream ChainUpdate);
+  rpc RentExemption(RentRequest) returns (RentResponse);
+}
+
+
+message ShooterSubscribeRequest{
+  oneof payload{
+    uint64 bloomfilter = 1;
+    string address = 2;
   }
 }
-
-message NotificationFilter {
-  uint64 filter_id = 1;
-  uint32 max_depth = 2;
-  repeated uint64 id = 3;
+message ShooterSubscribeResponse{
+  bytes hmac_secret = 1;
+}
+service Shooter{
+  // Receive account updates via UDP packets. Send the address first or the stream will be disconnected.
+  rpc Subscribe(stream ShooterSubscribeRequest) returns (stream ShooterSubscribeResponse);
 }
 
-message SingleRequest {
-  NotificationRequest notification_request = 1;
-  uint32 max_depth = 2;
-}
 
-message NotificationRequest {
-  bytes tree_root_id = 1;
-  uint64 last_tx_id = 2;
-  repeated uint64 id = 4;
-}
-
-message Notification {
-  bytes tree_root_id = 1;
-  repeated Node change = 2;
-  repeated DeleteWithTxid delete = 3;
-  repeated PayloadUpdate update = 4;
-}
-
-message PayloadUpdate {
-  uint64 id = 1;
-  uint64 last_tx_id = 2;
-  bytes payload = 3;
-}
-
-message DeleteWithTxid {
-  uint64 id = 1;
-  uint64 tx_id = 2;
-  bytes pubkey = 3;
-}
-
-message Node {
-  uint64 last_tx_id = 1;
-  repeated uint64 id = 2;
-  repeated uint64 children = 3;
-}
-
-message TreeNotFound { bytes tree_id = 1; }

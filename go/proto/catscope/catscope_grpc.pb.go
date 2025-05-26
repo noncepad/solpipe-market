@@ -19,91 +19,78 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Tree_Get_FullMethodName             = "/catscope.Tree/Get"
-	Tree_GetTreeByPubkey_FullMethodName = "/catscope.Tree/GetTreeByPubkey"
-	Tree_Stream_FullMethodName          = "/catscope.Tree/Stream"
-	Tree_OnSol_FullMethodName           = "/catscope.Tree/OnSol"
-	Tree_OnToken_FullMethodName         = "/catscope.Tree/OnToken"
-	Tree_OnSlot_FullMethodName          = "/catscope.Tree/OnSlot"
+	Graph_Get_FullMethodName           = "/catscopestate.Graph/Get"
+	Graph_Subscribe_FullMethodName     = "/catscopestate.Graph/Subscribe"
+	Graph_Chain_FullMethodName         = "/catscopestate.Graph/Chain"
+	Graph_RentExemption_FullMethodName = "/catscopestate.Graph/RentExemption"
 )
 
-// TreeClient is the client API for Tree service.
+// GraphClient is the client API for Graph service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type TreeClient interface {
-	// just get a single request
-	Get(ctx context.Context, in *SingleRequest, opts ...grpc.CallOption) (*Notification, error)
-	// receive requested notifications and chain state updates
-	GetTreeByPubkey(ctx context.Context, in *TreeRequest, opts ...grpc.CallOption) (*TreeResponse, error)
-	Stream(ctx context.Context, opts ...grpc.CallOption) (Tree_StreamClient, error)
-	OnSol(ctx context.Context, in *SolRequest, opts ...grpc.CallOption) (Tree_OnSolClient, error)
-	OnToken(ctx context.Context, in *TokenRequest, opts ...grpc.CallOption) (Tree_OnTokenClient, error)
-	OnSlot(ctx context.Context, in *SlotRequest, opts ...grpc.CallOption) (Tree_OnSlotClient, error)
+type GraphClient interface {
+	// Do graph subset subscritptions. Cannot have system program account or token account as root.
+	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
+	Subscribe(ctx context.Context, opts ...grpc.CallOption) (Graph_SubscribeClient, error)
+	// Get blockhash and slot+status updates.
+	Chain(ctx context.Context, in *Empty, opts ...grpc.CallOption) (Graph_ChainClient, error)
+	RentExemption(ctx context.Context, in *RentRequest, opts ...grpc.CallOption) (*RentResponse, error)
 }
 
-type treeClient struct {
+type graphClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewTreeClient(cc grpc.ClientConnInterface) TreeClient {
-	return &treeClient{cc}
+func NewGraphClient(cc grpc.ClientConnInterface) GraphClient {
+	return &graphClient{cc}
 }
 
-func (c *treeClient) Get(ctx context.Context, in *SingleRequest, opts ...grpc.CallOption) (*Notification, error) {
-	out := new(Notification)
-	err := c.cc.Invoke(ctx, Tree_Get_FullMethodName, in, out, opts...)
+func (c *graphClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error) {
+	out := new(GetResponse)
+	err := c.cc.Invoke(ctx, Graph_Get_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *treeClient) GetTreeByPubkey(ctx context.Context, in *TreeRequest, opts ...grpc.CallOption) (*TreeResponse, error) {
-	out := new(TreeResponse)
-	err := c.cc.Invoke(ctx, Tree_GetTreeByPubkey_FullMethodName, in, out, opts...)
+func (c *graphClient) Subscribe(ctx context.Context, opts ...grpc.CallOption) (Graph_SubscribeClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Graph_ServiceDesc.Streams[0], Graph_Subscribe_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
-}
-
-func (c *treeClient) Stream(ctx context.Context, opts ...grpc.CallOption) (Tree_StreamClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Tree_ServiceDesc.Streams[0], Tree_Stream_FullMethodName, opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &treeStreamClient{stream}
+	x := &graphSubscribeClient{stream}
 	return x, nil
 }
 
-type Tree_StreamClient interface {
-	Send(*StreamRequest) error
-	Recv() (*StreamResponse, error)
+type Graph_SubscribeClient interface {
+	Send(*SubscriptionRequest) error
+	Recv() (*SubscriptionResponse, error)
 	grpc.ClientStream
 }
 
-type treeStreamClient struct {
+type graphSubscribeClient struct {
 	grpc.ClientStream
 }
 
-func (x *treeStreamClient) Send(m *StreamRequest) error {
+func (x *graphSubscribeClient) Send(m *SubscriptionRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *treeStreamClient) Recv() (*StreamResponse, error) {
-	m := new(StreamResponse)
+func (x *graphSubscribeClient) Recv() (*SubscriptionResponse, error) {
+	m := new(SubscriptionResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *treeClient) OnSol(ctx context.Context, in *SolRequest, opts ...grpc.CallOption) (Tree_OnSolClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Tree_ServiceDesc.Streams[1], Tree_OnSol_FullMethodName, opts...)
+func (c *graphClient) Chain(ctx context.Context, in *Empty, opts ...grpc.CallOption) (Graph_ChainClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Graph_ServiceDesc.Streams[1], Graph_Chain_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &treeOnSolClient{stream}
+	x := &graphChainClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -113,299 +100,308 @@ func (c *treeClient) OnSol(ctx context.Context, in *SolRequest, opts ...grpc.Cal
 	return x, nil
 }
 
-type Tree_OnSolClient interface {
-	Recv() (*SolResponse, error)
+type Graph_ChainClient interface {
+	Recv() (*ChainUpdate, error)
 	grpc.ClientStream
 }
 
-type treeOnSolClient struct {
+type graphChainClient struct {
 	grpc.ClientStream
 }
 
-func (x *treeOnSolClient) Recv() (*SolResponse, error) {
-	m := new(SolResponse)
+func (x *graphChainClient) Recv() (*ChainUpdate, error) {
+	m := new(ChainUpdate)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *treeClient) OnToken(ctx context.Context, in *TokenRequest, opts ...grpc.CallOption) (Tree_OnTokenClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Tree_ServiceDesc.Streams[2], Tree_OnToken_FullMethodName, opts...)
+func (c *graphClient) RentExemption(ctx context.Context, in *RentRequest, opts ...grpc.CallOption) (*RentResponse, error) {
+	out := new(RentResponse)
+	err := c.cc.Invoke(ctx, Graph_RentExemption_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &treeOnTokenClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
+	return out, nil
 }
 
-type Tree_OnTokenClient interface {
-	Recv() (*TokenResponse, error)
-	grpc.ClientStream
-}
-
-type treeOnTokenClient struct {
-	grpc.ClientStream
-}
-
-func (x *treeOnTokenClient) Recv() (*TokenResponse, error) {
-	m := new(TokenResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *treeClient) OnSlot(ctx context.Context, in *SlotRequest, opts ...grpc.CallOption) (Tree_OnSlotClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Tree_ServiceDesc.Streams[3], Tree_OnSlot_FullMethodName, opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &treeOnSlotClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type Tree_OnSlotClient interface {
-	Recv() (*SlotResponse, error)
-	grpc.ClientStream
-}
-
-type treeOnSlotClient struct {
-	grpc.ClientStream
-}
-
-func (x *treeOnSlotClient) Recv() (*SlotResponse, error) {
-	m := new(SlotResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-// TreeServer is the server API for Tree service.
-// All implementations must embed UnimplementedTreeServer
+// GraphServer is the server API for Graph service.
+// All implementations must embed UnimplementedGraphServer
 // for forward compatibility
-type TreeServer interface {
-	// just get a single request
-	Get(context.Context, *SingleRequest) (*Notification, error)
-	// receive requested notifications and chain state updates
-	GetTreeByPubkey(context.Context, *TreeRequest) (*TreeResponse, error)
-	Stream(Tree_StreamServer) error
-	OnSol(*SolRequest, Tree_OnSolServer) error
-	OnToken(*TokenRequest, Tree_OnTokenServer) error
-	OnSlot(*SlotRequest, Tree_OnSlotServer) error
-	mustEmbedUnimplementedTreeServer()
+type GraphServer interface {
+	// Do graph subset subscritptions. Cannot have system program account or token account as root.
+	Get(context.Context, *GetRequest) (*GetResponse, error)
+	Subscribe(Graph_SubscribeServer) error
+	// Get blockhash and slot+status updates.
+	Chain(*Empty, Graph_ChainServer) error
+	RentExemption(context.Context, *RentRequest) (*RentResponse, error)
+	mustEmbedUnimplementedGraphServer()
 }
 
-// UnimplementedTreeServer must be embedded to have forward compatible implementations.
-type UnimplementedTreeServer struct {
+// UnimplementedGraphServer must be embedded to have forward compatible implementations.
+type UnimplementedGraphServer struct {
 }
 
-func (UnimplementedTreeServer) Get(context.Context, *SingleRequest) (*Notification, error) {
+func (UnimplementedGraphServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedTreeServer) GetTreeByPubkey(context.Context, *TreeRequest) (*TreeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetTreeByPubkey not implemented")
+func (UnimplementedGraphServer) Subscribe(Graph_SubscribeServer) error {
+	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
 }
-func (UnimplementedTreeServer) Stream(Tree_StreamServer) error {
-	return status.Errorf(codes.Unimplemented, "method Stream not implemented")
+func (UnimplementedGraphServer) Chain(*Empty, Graph_ChainServer) error {
+	return status.Errorf(codes.Unimplemented, "method Chain not implemented")
 }
-func (UnimplementedTreeServer) OnSol(*SolRequest, Tree_OnSolServer) error {
-	return status.Errorf(codes.Unimplemented, "method OnSol not implemented")
+func (UnimplementedGraphServer) RentExemption(context.Context, *RentRequest) (*RentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RentExemption not implemented")
 }
-func (UnimplementedTreeServer) OnToken(*TokenRequest, Tree_OnTokenServer) error {
-	return status.Errorf(codes.Unimplemented, "method OnToken not implemented")
-}
-func (UnimplementedTreeServer) OnSlot(*SlotRequest, Tree_OnSlotServer) error {
-	return status.Errorf(codes.Unimplemented, "method OnSlot not implemented")
-}
-func (UnimplementedTreeServer) mustEmbedUnimplementedTreeServer() {}
+func (UnimplementedGraphServer) mustEmbedUnimplementedGraphServer() {}
 
-// UnsafeTreeServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to TreeServer will
+// UnsafeGraphServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to GraphServer will
 // result in compilation errors.
-type UnsafeTreeServer interface {
-	mustEmbedUnimplementedTreeServer()
+type UnsafeGraphServer interface {
+	mustEmbedUnimplementedGraphServer()
 }
 
-func RegisterTreeServer(s grpc.ServiceRegistrar, srv TreeServer) {
-	s.RegisterService(&Tree_ServiceDesc, srv)
+func RegisterGraphServer(s grpc.ServiceRegistrar, srv GraphServer) {
+	s.RegisterService(&Graph_ServiceDesc, srv)
 }
 
-func _Tree_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SingleRequest)
+func _Graph_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TreeServer).Get(ctx, in)
+		return srv.(GraphServer).Get(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Tree_Get_FullMethodName,
+		FullMethod: Graph_Get_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TreeServer).Get(ctx, req.(*SingleRequest))
+		return srv.(GraphServer).Get(ctx, req.(*GetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Tree_GetTreeByPubkey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TreeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TreeServer).GetTreeByPubkey(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Tree_GetTreeByPubkey_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TreeServer).GetTreeByPubkey(ctx, req.(*TreeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+func _Graph_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GraphServer).Subscribe(&graphSubscribeServer{stream})
 }
 
-func _Tree_Stream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(TreeServer).Stream(&treeStreamServer{stream})
-}
-
-type Tree_StreamServer interface {
-	Send(*StreamResponse) error
-	Recv() (*StreamRequest, error)
+type Graph_SubscribeServer interface {
+	Send(*SubscriptionResponse) error
+	Recv() (*SubscriptionRequest, error)
 	grpc.ServerStream
 }
 
-type treeStreamServer struct {
+type graphSubscribeServer struct {
 	grpc.ServerStream
 }
 
-func (x *treeStreamServer) Send(m *StreamResponse) error {
+func (x *graphSubscribeServer) Send(m *SubscriptionResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *treeStreamServer) Recv() (*StreamRequest, error) {
-	m := new(StreamRequest)
+func (x *graphSubscribeServer) Recv() (*SubscriptionRequest, error) {
+	m := new(SubscriptionRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func _Tree_OnSol_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SolRequest)
+func _Graph_Chain_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Empty)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(TreeServer).OnSol(m, &treeOnSolServer{stream})
+	return srv.(GraphServer).Chain(m, &graphChainServer{stream})
 }
 
-type Tree_OnSolServer interface {
-	Send(*SolResponse) error
+type Graph_ChainServer interface {
+	Send(*ChainUpdate) error
 	grpc.ServerStream
 }
 
-type treeOnSolServer struct {
+type graphChainServer struct {
 	grpc.ServerStream
 }
 
-func (x *treeOnSolServer) Send(m *SolResponse) error {
+func (x *graphChainServer) Send(m *ChainUpdate) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Tree_OnToken_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(TokenRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _Graph_RentExemption_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(TreeServer).OnToken(m, &treeOnTokenServer{stream})
-}
-
-type Tree_OnTokenServer interface {
-	Send(*TokenResponse) error
-	grpc.ServerStream
-}
-
-type treeOnTokenServer struct {
-	grpc.ServerStream
-}
-
-func (x *treeOnTokenServer) Send(m *TokenResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func _Tree_OnSlot_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SlotRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+	if interceptor == nil {
+		return srv.(GraphServer).RentExemption(ctx, in)
 	}
-	return srv.(TreeServer).OnSlot(m, &treeOnSlotServer{stream})
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Graph_RentExemption_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GraphServer).RentExemption(ctx, req.(*RentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-type Tree_OnSlotServer interface {
-	Send(*SlotResponse) error
-	grpc.ServerStream
-}
-
-type treeOnSlotServer struct {
-	grpc.ServerStream
-}
-
-func (x *treeOnSlotServer) Send(m *SlotResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-// Tree_ServiceDesc is the grpc.ServiceDesc for Tree service.
+// Graph_ServiceDesc is the grpc.ServiceDesc for Graph service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Tree_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "catscope.Tree",
-	HandlerType: (*TreeServer)(nil),
+var Graph_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "catscopestate.Graph",
+	HandlerType: (*GraphServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Get",
-			Handler:    _Tree_Get_Handler,
+			Handler:    _Graph_Get_Handler,
 		},
 		{
-			MethodName: "GetTreeByPubkey",
-			Handler:    _Tree_GetTreeByPubkey_Handler,
+			MethodName: "RentExemption",
+			Handler:    _Graph_RentExemption_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Stream",
-			Handler:       _Tree_Stream_Handler,
+			StreamName:    "Subscribe",
+			Handler:       _Graph_Subscribe_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "OnSol",
-			Handler:       _Tree_OnSol_Handler,
+			StreamName:    "Chain",
+			Handler:       _Graph_Chain_Handler,
 			ServerStreams: true,
 		},
+	},
+	Metadata: "catscope.proto",
+}
+
+const (
+	Shooter_Subscribe_FullMethodName = "/catscopestate.Shooter/Subscribe"
+)
+
+// ShooterClient is the client API for Shooter service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type ShooterClient interface {
+	// Receive account updates via UDP packets. Send the address first or the stream will be disconnected.
+	Subscribe(ctx context.Context, opts ...grpc.CallOption) (Shooter_SubscribeClient, error)
+}
+
+type shooterClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewShooterClient(cc grpc.ClientConnInterface) ShooterClient {
+	return &shooterClient{cc}
+}
+
+func (c *shooterClient) Subscribe(ctx context.Context, opts ...grpc.CallOption) (Shooter_SubscribeClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Shooter_ServiceDesc.Streams[0], Shooter_Subscribe_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &shooterSubscribeClient{stream}
+	return x, nil
+}
+
+type Shooter_SubscribeClient interface {
+	Send(*ShooterSubscribeRequest) error
+	Recv() (*ShooterSubscribeResponse, error)
+	grpc.ClientStream
+}
+
+type shooterSubscribeClient struct {
+	grpc.ClientStream
+}
+
+func (x *shooterSubscribeClient) Send(m *ShooterSubscribeRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *shooterSubscribeClient) Recv() (*ShooterSubscribeResponse, error) {
+	m := new(ShooterSubscribeResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// ShooterServer is the server API for Shooter service.
+// All implementations must embed UnimplementedShooterServer
+// for forward compatibility
+type ShooterServer interface {
+	// Receive account updates via UDP packets. Send the address first or the stream will be disconnected.
+	Subscribe(Shooter_SubscribeServer) error
+	mustEmbedUnimplementedShooterServer()
+}
+
+// UnimplementedShooterServer must be embedded to have forward compatible implementations.
+type UnimplementedShooterServer struct {
+}
+
+func (UnimplementedShooterServer) Subscribe(Shooter_SubscribeServer) error {
+	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
+}
+func (UnimplementedShooterServer) mustEmbedUnimplementedShooterServer() {}
+
+// UnsafeShooterServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ShooterServer will
+// result in compilation errors.
+type UnsafeShooterServer interface {
+	mustEmbedUnimplementedShooterServer()
+}
+
+func RegisterShooterServer(s grpc.ServiceRegistrar, srv ShooterServer) {
+	s.RegisterService(&Shooter_ServiceDesc, srv)
+}
+
+func _Shooter_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ShooterServer).Subscribe(&shooterSubscribeServer{stream})
+}
+
+type Shooter_SubscribeServer interface {
+	Send(*ShooterSubscribeResponse) error
+	Recv() (*ShooterSubscribeRequest, error)
+	grpc.ServerStream
+}
+
+type shooterSubscribeServer struct {
+	grpc.ServerStream
+}
+
+func (x *shooterSubscribeServer) Send(m *ShooterSubscribeResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *shooterSubscribeServer) Recv() (*ShooterSubscribeRequest, error) {
+	m := new(ShooterSubscribeRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// Shooter_ServiceDesc is the grpc.ServiceDesc for Shooter service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Shooter_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "catscopestate.Shooter",
+	HandlerType: (*ShooterServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "OnToken",
-			Handler:       _Tree_OnToken_Handler,
+			StreamName:    "Subscribe",
+			Handler:       _Shooter_Subscribe_Handler,
 			ServerStreams: true,
-		},
-		{
-			StreamName:    "OnSlot",
-			Handler:       _Tree_OnSlot_Handler,
-			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "catscope.proto",
