@@ -21,18 +21,19 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Bot_Upload_FullMethodName    = "/bot.Bot/Upload"
 	Bot_GetStatus_FullMethodName = "/bot.Bot/GetStatus"
-	Bot_Start_FullMethodName     = "/bot.Bot/Start"
-	Bot_Stop_FullMethodName      = "/bot.Bot/Stop"
+	Bot_Run_FullMethodName       = "/bot.Bot/Run"
 )
 
 // BotClient is the client API for Bot service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BotClient interface {
+	// Upload a bot. If more than N bots exist, the oldest one will be overwritten and deleted.
 	Upload(ctx context.Context, opts ...grpc.CallOption) (Bot_UploadClient, error)
+	// Get a list of currently uploaded bots. There is a limit of N.
 	GetStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*BotStatus, error)
-	Start(ctx context.Context, opts ...grpc.CallOption) (Bot_StartClient, error)
-	Stop(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*BotStatus, error)
+	// The bot must have already been uploaded.  The Bot is frozen upon disconnect.
+	Run(ctx context.Context, opts ...grpc.CallOption) (Bot_RunClient, error)
 }
 
 type botClient struct {
@@ -86,57 +87,47 @@ func (c *botClient) GetStatus(ctx context.Context, in *Empty, opts ...grpc.CallO
 	return out, nil
 }
 
-func (c *botClient) Start(ctx context.Context, opts ...grpc.CallOption) (Bot_StartClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Bot_ServiceDesc.Streams[1], Bot_Start_FullMethodName, opts...)
+func (c *botClient) Run(ctx context.Context, opts ...grpc.CallOption) (Bot_RunClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Bot_ServiceDesc.Streams[1], Bot_Run_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &botStartClient{stream}
+	x := &botRunClient{stream}
 	return x, nil
 }
 
-type Bot_StartClient interface {
-	Send(*Stdin) error
-	CloseAndRecv() (*BotStatus, error)
+type Bot_RunClient interface {
+	Send(*BotIn) error
+	Recv() (*BotOut, error)
 	grpc.ClientStream
 }
 
-type botStartClient struct {
+type botRunClient struct {
 	grpc.ClientStream
 }
 
-func (x *botStartClient) Send(m *Stdin) error {
+func (x *botRunClient) Send(m *BotIn) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *botStartClient) CloseAndRecv() (*BotStatus, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(BotStatus)
+func (x *botRunClient) Recv() (*BotOut, error) {
+	m := new(BotOut)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *botClient) Stop(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*BotStatus, error) {
-	out := new(BotStatus)
-	err := c.cc.Invoke(ctx, Bot_Stop_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // BotServer is the server API for Bot service.
 // All implementations must embed UnimplementedBotServer
 // for forward compatibility
 type BotServer interface {
+	// Upload a bot. If more than N bots exist, the oldest one will be overwritten and deleted.
 	Upload(Bot_UploadServer) error
+	// Get a list of currently uploaded bots. There is a limit of N.
 	GetStatus(context.Context, *Empty) (*BotStatus, error)
-	Start(Bot_StartServer) error
-	Stop(context.Context, *Empty) (*BotStatus, error)
+	// The bot must have already been uploaded.  The Bot is frozen upon disconnect.
+	Run(Bot_RunServer) error
 	mustEmbedUnimplementedBotServer()
 }
 
@@ -150,11 +141,8 @@ func (UnimplementedBotServer) Upload(Bot_UploadServer) error {
 func (UnimplementedBotServer) GetStatus(context.Context, *Empty) (*BotStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStatus not implemented")
 }
-func (UnimplementedBotServer) Start(Bot_StartServer) error {
-	return status.Errorf(codes.Unimplemented, "method Start not implemented")
-}
-func (UnimplementedBotServer) Stop(context.Context, *Empty) (*BotStatus, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Stop not implemented")
+func (UnimplementedBotServer) Run(Bot_RunServer) error {
+	return status.Errorf(codes.Unimplemented, "method Run not implemented")
 }
 func (UnimplementedBotServer) mustEmbedUnimplementedBotServer() {}
 
@@ -213,48 +201,30 @@ func _Bot_GetStatus_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Bot_Start_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(BotServer).Start(&botStartServer{stream})
+func _Bot_Run_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(BotServer).Run(&botRunServer{stream})
 }
 
-type Bot_StartServer interface {
-	SendAndClose(*BotStatus) error
-	Recv() (*Stdin, error)
+type Bot_RunServer interface {
+	Send(*BotOut) error
+	Recv() (*BotIn, error)
 	grpc.ServerStream
 }
 
-type botStartServer struct {
+type botRunServer struct {
 	grpc.ServerStream
 }
 
-func (x *botStartServer) SendAndClose(m *BotStatus) error {
+func (x *botRunServer) Send(m *BotOut) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *botStartServer) Recv() (*Stdin, error) {
-	m := new(Stdin)
+func (x *botRunServer) Recv() (*BotIn, error) {
+	m := new(BotIn)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
-}
-
-func _Bot_Stop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BotServer).Stop(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Bot_Stop_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BotServer).Stop(ctx, req.(*Empty))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 // Bot_ServiceDesc is the grpc.ServiceDesc for Bot service.
@@ -268,10 +238,6 @@ var Bot_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetStatus",
 			Handler:    _Bot_GetStatus_Handler,
 		},
-		{
-			MethodName: "Stop",
-			Handler:    _Bot_Stop_Handler,
-		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -280,8 +246,9 @@ var Bot_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "Start",
-			Handler:       _Bot_Start_Handler,
+			StreamName:    "Run",
+			Handler:       _Bot_Run_Handler,
+			ServerStreams: true,
 			ClientStreams: true,
 		},
 	},
