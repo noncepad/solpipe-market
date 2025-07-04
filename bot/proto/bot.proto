@@ -10,7 +10,7 @@ service Bot {
   // Upload a bot. If more than N bots exist, the oldest one will be overwritten and deleted.
   rpc Upload(stream BotUploadRequest) returns (BotStatus) {}
   // Get a list of currently uploaded bots. There is a limit of N.
-  rpc GetStatus(Empty) returns (BotStatus) {}
+  rpc GetStatus(Empty) returns (StatusResponse) {}
   // The bot must have already been uploaded.  The Bot is frozen upon disconnect.
   rpc Run(stream BotIn) returns (stream BotOut) {}
 }
@@ -31,9 +31,16 @@ message BotHeader {
 }
 message BotBody { bytes data = 1; }
 
-message BotStatus {
-  repeated BotHeader list = 1;
+message StatusResponse {
+  repeated BotStatus list = 1;
 }
+
+message BotStatus{
+  BotHeader header = 1;
+  bool is_running = 2;
+}
+
+
 
 message BotIn{
   oneof in {

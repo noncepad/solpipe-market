@@ -66,18 +66,3 @@ service Graph {
 }
 
 
-message ShooterSubscribeRequest{
-  oneof payload{
-    uint64 bloomfilter = 1;
-    string address = 2;
-  }
-}
-message ShooterSubscribeResponse{
-  bytes hmac_secret = 1;
-}
-service Shooter{
-  // Receive account updates via UDP packets. Send the address first or the stream will be disconnected.
-  rpc Subscribe(stream ShooterSubscribeRequest) returns (stream ShooterSubscribeResponse);
-}
-
-

@@ -31,7 +31,7 @@ type BotClient interface {
 	// Upload a bot. If more than N bots exist, the oldest one will be overwritten and deleted.
 	Upload(ctx context.Context, opts ...grpc.CallOption) (Bot_UploadClient, error)
 	// Get a list of currently uploaded bots. There is a limit of N.
-	GetStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*BotStatus, error)
+	GetStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*StatusResponse, error)
 	// The bot must have already been uploaded.  The Bot is frozen upon disconnect.
 	Run(ctx context.Context, opts ...grpc.CallOption) (Bot_RunClient, error)
 }
@@ -78,8 +78,8 @@ func (x *botUploadClient) CloseAndRecv() (*BotStatus, error) {
 	return m, nil
 }
 
-func (c *botClient) GetStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*BotStatus, error) {
-	out := new(BotStatus)
+func (c *botClient) GetStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*StatusResponse, error) {
+	out := new(StatusResponse)
 	err := c.cc.Invoke(ctx, Bot_GetStatus_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ type BotServer interface {
 	// Upload a bot. If more than N bots exist, the oldest one will be overwritten and deleted.
 	Upload(Bot_UploadServer) error
 	// Get a list of currently uploaded bots. There is a limit of N.
-	GetStatus(context.Context, *Empty) (*BotStatus, error)
+	GetStatus(context.Context, *Empty) (*StatusResponse, error)
 	// The bot must have already been uploaded.  The Bot is frozen upon disconnect.
 	Run(Bot_RunServer) error
 	mustEmbedUnimplementedBotServer()
@@ -138,7 +138,7 @@ type UnimplementedBotServer struct {
 func (UnimplementedBotServer) Upload(Bot_UploadServer) error {
 	return status.Errorf(codes.Unimplemented, "method Upload not implemented")
 }
-func (UnimplementedBotServer) GetStatus(context.Context, *Empty) (*BotStatus, error) {
+func (UnimplementedBotServer) GetStatus(context.Context, *Empty) (*StatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStatus not implemented")
 }
 func (UnimplementedBotServer) Run(Bot_RunServer) error {
