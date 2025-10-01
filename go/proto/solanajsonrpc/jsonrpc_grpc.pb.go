@@ -15,8 +15,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-// Requires gRPC-Go v1.32.0 or later.
-const _ = grpc.SupportPackageIsVersion7
+// Requires gRPC-Go v1.62.0 or later.
+const _ = grpc.SupportPackageIsVersion8
 
 const (
 	JsonRpc_Get_FullMethodName  = "/solanajsonrpc.JsonRpc/Get"
@@ -40,11 +40,12 @@ func NewJsonRpcClient(cc grpc.ClientConnInterface) JsonRpcClient {
 }
 
 func (c *jsonRpcClient) Get(ctx context.Context, in *Header, opts ...grpc.CallOption) (JsonRpc_GetClient, error) {
-	stream, err := c.cc.NewStream(ctx, &JsonRpc_ServiceDesc.Streams[0], JsonRpc_Get_FullMethodName, opts...)
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &JsonRpc_ServiceDesc.Streams[0], JsonRpc_Get_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &jsonRpcGetClient{stream}
+	x := &jsonRpcGetClient{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -72,11 +73,12 @@ func (x *jsonRpcGetClient) Recv() (*Response, error) {
 }
 
 func (c *jsonRpcClient) Post(ctx context.Context, opts ...grpc.CallOption) (JsonRpc_PostClient, error) {
-	stream, err := c.cc.NewStream(ctx, &JsonRpc_ServiceDesc.Streams[1], JsonRpc_Post_FullMethodName, opts...)
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &JsonRpc_ServiceDesc.Streams[1], JsonRpc_Post_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &jsonRpcPostClient{stream}
+	x := &jsonRpcPostClient{ClientStream: stream}
 	return x, nil
 }
 
@@ -139,7 +141,7 @@ func _JsonRpc_Get_Handler(srv interface{}, stream grpc.ServerStream) error {
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(JsonRpcServer).Get(m, &jsonRpcGetServer{stream})
+	return srv.(JsonRpcServer).Get(m, &jsonRpcGetServer{ServerStream: stream})
 }
 
 type JsonRpc_GetServer interface {
@@ -156,7 +158,7 @@ func (x *jsonRpcGetServer) Send(m *Response) error {
 }
 
 func _JsonRpc_Post_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(JsonRpcServer).Post(&jsonRpcPostServer{stream})
+	return srv.(JsonRpcServer).Post(&jsonRpcPostServer{ServerStream: stream})
 }
 
 type JsonRpc_PostServer interface {

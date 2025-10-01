@@ -15,8 +15,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-// Requires gRPC-Go v1.32.0 or later.
-const _ = grpc.SupportPackageIsVersion7
+// Requires gRPC-Go v1.62.0 or later.
+const _ = grpc.SupportPackageIsVersion8
 
 const (
 	TransactionProcessing_Blockhash_FullMethodName     = "/txproc.TransactionProcessing/Blockhash"
@@ -46,8 +46,9 @@ func NewTransactionProcessingClient(cc grpc.ClientConnInterface) TransactionProc
 }
 
 func (c *transactionProcessingClient) Blockhash(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*BlockhashResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BlockhashResponse)
-	err := c.cc.Invoke(ctx, TransactionProcessing_Blockhash_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, TransactionProcessing_Blockhash_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,8 +56,9 @@ func (c *transactionProcessingClient) Blockhash(ctx context.Context, in *Empty, 
 }
 
 func (c *transactionProcessingClient) RentExemption(ctx context.Context, in *RentRequest, opts ...grpc.CallOption) (*RentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RentResponse)
-	err := c.cc.Invoke(ctx, TransactionProcessing_RentExemption_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, TransactionProcessing_RentExemption_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +66,9 @@ func (c *transactionProcessingClient) RentExemption(ctx context.Context, in *Ren
 }
 
 func (c *transactionProcessingClient) Broadcast(ctx context.Context, in *BroadcastRequest, opts ...grpc.CallOption) (*TransactionResult, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TransactionResult)
-	err := c.cc.Invoke(ctx, TransactionProcessing_Broadcast_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, TransactionProcessing_Broadcast_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,11 +76,12 @@ func (c *transactionProcessingClient) Broadcast(ctx context.Context, in *Broadca
 }
 
 func (c *transactionProcessingClient) Create(ctx context.Context, opts ...grpc.CallOption) (TransactionProcessing_CreateClient, error) {
-	stream, err := c.cc.NewStream(ctx, &TransactionProcessing_ServiceDesc.Streams[0], TransactionProcessing_Create_FullMethodName, opts...)
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &TransactionProcessing_ServiceDesc.Streams[0], TransactionProcessing_Create_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &transactionProcessingCreateClient{stream}
+	x := &transactionProcessingCreateClient{ClientStream: stream}
 	return x, nil
 }
 
@@ -104,11 +108,12 @@ func (x *transactionProcessingCreateClient) Recv() (*ProgramResponse, error) {
 }
 
 func (c *transactionProcessingClient) Upgrade(ctx context.Context, opts ...grpc.CallOption) (TransactionProcessing_UpgradeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &TransactionProcessing_ServiceDesc.Streams[1], TransactionProcessing_Upgrade_FullMethodName, opts...)
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &TransactionProcessing_ServiceDesc.Streams[1], TransactionProcessing_Upgrade_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &transactionProcessingUpgradeClient{stream}
+	x := &transactionProcessingUpgradeClient{ClientStream: stream}
 	return x, nil
 }
 
@@ -233,7 +238,7 @@ func _TransactionProcessing_Broadcast_Handler(srv interface{}, ctx context.Conte
 }
 
 func _TransactionProcessing_Create_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(TransactionProcessingServer).Create(&transactionProcessingCreateServer{stream})
+	return srv.(TransactionProcessingServer).Create(&transactionProcessingCreateServer{ServerStream: stream})
 }
 
 type TransactionProcessing_CreateServer interface {
@@ -259,7 +264,7 @@ func (x *transactionProcessingCreateServer) Recv() (*CreateProgramRequest, error
 }
 
 func _TransactionProcessing_Upgrade_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(TransactionProcessingServer).Upgrade(&transactionProcessingUpgradeServer{stream})
+	return srv.(TransactionProcessingServer).Upgrade(&transactionProcessingUpgradeServer{ServerStream: stream})
 }
 
 type TransactionProcessing_UpgradeServer interface {

@@ -25,11 +25,19 @@ message Account {
 }
 
 message SubscriptionRequest {
-  AccountId root = 1;
-  uint32 filter_weight = 2;
-  uint32 depth = 3;
-  uint64 last_slot = 4;
+  oneof request{
+    Subscription subscription = 1;
+    uint32 cancel = 2;
+  }
 }
+message Subscription{
+  uint32 id = 1;
+  AccountId root = 2;
+  uint32 filter_weight = 3;
+  uint32 depth = 4;
+  uint64 last_slot = 5;
+}
+
 message ChainUpdate {
   oneof update {
     Slot slot = 1;
@@ -54,7 +62,7 @@ message SubscriptionResponse {
 }
 
 message RentRequest { uint64 size = 1; }
-message RentResponse { uint64 size = 1; }
+message RentResponse { uint64 lamports = 1; }
 
 service Graph {
   // Do graph subset subscritptions. Cannot have system program account or token account as root.

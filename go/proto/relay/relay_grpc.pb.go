@@ -15,8 +15,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-// Requires gRPC-Go v1.32.0 or later.
-const _ = grpc.SupportPackageIsVersion7
+// Requires gRPC-Go v1.62.0 or later.
+const _ = grpc.SupportPackageIsVersion8
 
 const (
 	Capacity_OnStatus_FullMethodName = "/relay.Capacity/OnStatus"
@@ -38,11 +38,12 @@ func NewCapacityClient(cc grpc.ClientConnInterface) CapacityClient {
 }
 
 func (c *capacityClient) OnStatus(ctx context.Context, in *CapacityRequest, opts ...grpc.CallOption) (Capacity_OnStatusClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Capacity_ServiceDesc.Streams[0], Capacity_OnStatus_FullMethodName, opts...)
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Capacity_ServiceDesc.Streams[0], Capacity_OnStatus_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &capacityOnStatusClient{stream}
+	x := &capacityOnStatusClient{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -102,7 +103,7 @@ func _Capacity_OnStatus_Handler(srv interface{}, stream grpc.ServerStream) error
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(CapacityServer).OnStatus(m, &capacityOnStatusServer{stream})
+	return srv.(CapacityServer).OnStatus(m, &capacityOnStatusServer{ServerStream: stream})
 }
 
 type Capacity_OnStatusServer interface {
@@ -157,8 +158,9 @@ func NewMeterClient(cc grpc.ClientConnInterface) MeterClient {
 }
 
 func (c *meterClient) GetStatus(ctx context.Context, in *StatusRequest, opts ...grpc.CallOption) (*Usage, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Usage)
-	err := c.cc.Invoke(ctx, Meter_GetStatus_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Meter_GetStatus_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -166,11 +168,12 @@ func (c *meterClient) GetStatus(ctx context.Context, in *StatusRequest, opts ...
 }
 
 func (c *meterClient) OnStatus(ctx context.Context, in *StatusRequest, opts ...grpc.CallOption) (Meter_OnStatusClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Meter_ServiceDesc.Streams[0], Meter_OnStatus_FullMethodName, opts...)
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Meter_ServiceDesc.Streams[0], Meter_OnStatus_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &meterOnStatusClient{stream}
+	x := &meterOnStatusClient{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -252,7 +255,7 @@ func _Meter_OnStatus_Handler(srv interface{}, stream grpc.ServerStream) error {
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(MeterServer).OnStatus(m, &meterOnStatusServer{stream})
+	return srv.(MeterServer).OnStatus(m, &meterOnStatusServer{ServerStream: stream})
 }
 
 type Meter_OnStatusServer interface {
@@ -311,8 +314,9 @@ func NewEndpointClient(cc grpc.ClientConnInterface) EndpointClient {
 }
 
 func (c *endpointClient) GetClearNetAddress(ctx context.Context, in *EndpointRequest, opts ...grpc.CallOption) (*EndpointResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(EndpointResponse)
-	err := c.cc.Invoke(ctx, Endpoint_GetClearNetAddress_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Endpoint_GetClearNetAddress_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -402,8 +406,9 @@ func NewInformationClient(cc grpc.ClientConnInterface) InformationClient {
 }
 
 func (c *informationClient) Get(ctx context.Context, in *InformationRequest, opts ...grpc.CallOption) (*ApiDescription, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ApiDescription)
-	err := c.cc.Invoke(ctx, Information_Get_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Information_Get_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}

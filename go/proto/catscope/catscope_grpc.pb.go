@@ -15,8 +15,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-// Requires gRPC-Go v1.32.0 or later.
-const _ = grpc.SupportPackageIsVersion7
+// Requires gRPC-Go v1.62.0 or later.
+const _ = grpc.SupportPackageIsVersion8
 
 const (
 	Graph_Get_FullMethodName           = "/catscopestate.Graph/Get"
@@ -46,8 +46,9 @@ func NewGraphClient(cc grpc.ClientConnInterface) GraphClient {
 }
 
 func (c *graphClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetResponse)
-	err := c.cc.Invoke(ctx, Graph_Get_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Graph_Get_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,11 +56,12 @@ func (c *graphClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.Call
 }
 
 func (c *graphClient) Subscribe(ctx context.Context, opts ...grpc.CallOption) (Graph_SubscribeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Graph_ServiceDesc.Streams[0], Graph_Subscribe_FullMethodName, opts...)
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Graph_ServiceDesc.Streams[0], Graph_Subscribe_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &graphSubscribeClient{stream}
+	x := &graphSubscribeClient{ClientStream: stream}
 	return x, nil
 }
 
@@ -86,11 +88,12 @@ func (x *graphSubscribeClient) Recv() (*SubscriptionResponse, error) {
 }
 
 func (c *graphClient) Chain(ctx context.Context, in *Empty, opts ...grpc.CallOption) (Graph_ChainClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Graph_ServiceDesc.Streams[1], Graph_Chain_FullMethodName, opts...)
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Graph_ServiceDesc.Streams[1], Graph_Chain_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &graphChainClient{stream}
+	x := &graphChainClient{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -118,8 +121,9 @@ func (x *graphChainClient) Recv() (*ChainUpdate, error) {
 }
 
 func (c *graphClient) RentExemption(ctx context.Context, in *RentRequest, opts ...grpc.CallOption) (*RentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RentResponse)
-	err := c.cc.Invoke(ctx, Graph_RentExemption_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Graph_RentExemption_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +191,7 @@ func _Graph_Get_Handler(srv interface{}, ctx context.Context, dec func(interface
 }
 
 func _Graph_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(GraphServer).Subscribe(&graphSubscribeServer{stream})
+	return srv.(GraphServer).Subscribe(&graphSubscribeServer{ServerStream: stream})
 }
 
 type Graph_SubscribeServer interface {
@@ -217,7 +221,7 @@ func _Graph_Chain_Handler(srv interface{}, stream grpc.ServerStream) error {
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(GraphServer).Chain(m, &graphChainServer{stream})
+	return srv.(GraphServer).Chain(m, &graphChainServer{ServerStream: stream})
 }
 
 type Graph_ChainServer interface {

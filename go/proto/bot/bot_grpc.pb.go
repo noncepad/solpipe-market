@@ -15,8 +15,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-// Requires gRPC-Go v1.32.0 or later.
-const _ = grpc.SupportPackageIsVersion7
+// Requires gRPC-Go v1.62.0 or later.
+const _ = grpc.SupportPackageIsVersion8
 
 const (
 	Bot_Upload_FullMethodName    = "/bot.Bot/Upload"
@@ -45,17 +45,18 @@ func NewBotClient(cc grpc.ClientConnInterface) BotClient {
 }
 
 func (c *botClient) Upload(ctx context.Context, opts ...grpc.CallOption) (Bot_UploadClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Bot_ServiceDesc.Streams[0], Bot_Upload_FullMethodName, opts...)
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Bot_ServiceDesc.Streams[0], Bot_Upload_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &botUploadClient{stream}
+	x := &botUploadClient{ClientStream: stream}
 	return x, nil
 }
 
 type Bot_UploadClient interface {
 	Send(*BotUploadRequest) error
-	CloseAndRecv() (*BotStatus, error)
+	Recv() (*BotUploadResponse, error)
 	grpc.ClientStream
 }
 
@@ -67,11 +68,8 @@ func (x *botUploadClient) Send(m *BotUploadRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *botUploadClient) CloseAndRecv() (*BotStatus, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(BotStatus)
+func (x *botUploadClient) Recv() (*BotUploadResponse, error) {
+	m := new(BotUploadResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -79,8 +77,9 @@ func (x *botUploadClient) CloseAndRecv() (*BotStatus, error) {
 }
 
 func (c *botClient) GetStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*StatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(StatusResponse)
-	err := c.cc.Invoke(ctx, Bot_GetStatus_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Bot_GetStatus_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -88,11 +87,12 @@ func (c *botClient) GetStatus(ctx context.Context, in *Empty, opts ...grpc.CallO
 }
 
 func (c *botClient) Run(ctx context.Context, opts ...grpc.CallOption) (Bot_RunClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Bot_ServiceDesc.Streams[1], Bot_Run_FullMethodName, opts...)
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Bot_ServiceDesc.Streams[1], Bot_Run_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &botRunClient{stream}
+	x := &botRunClient{ClientStream: stream}
 	return x, nil
 }
 
@@ -158,11 +158,11 @@ func RegisterBotServer(s grpc.ServiceRegistrar, srv BotServer) {
 }
 
 func _Bot_Upload_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(BotServer).Upload(&botUploadServer{stream})
+	return srv.(BotServer).Upload(&botUploadServer{ServerStream: stream})
 }
 
 type Bot_UploadServer interface {
-	SendAndClose(*BotStatus) error
+	Send(*BotUploadResponse) error
 	Recv() (*BotUploadRequest, error)
 	grpc.ServerStream
 }
@@ -171,7 +171,7 @@ type botUploadServer struct {
 	grpc.ServerStream
 }
 
-func (x *botUploadServer) SendAndClose(m *BotStatus) error {
+func (x *botUploadServer) Send(m *BotUploadResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -202,7 +202,7 @@ func _Bot_GetStatus_Handler(srv interface{}, ctx context.Context, dec func(inter
 }
 
 func _Bot_Run_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(BotServer).Run(&botRunServer{stream})
+	return srv.(BotServer).Run(&botRunServer{ServerStream: stream})
 }
 
 type Bot_RunServer interface {
@@ -243,6 +243,7 @@ var Bot_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "Upload",
 			Handler:       _Bot_Upload_Handler,
+			ServerStreams: true,
 			ClientStreams: true,
 		},
 		{

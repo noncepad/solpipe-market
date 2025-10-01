@@ -15,8 +15,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-// Requires gRPC-Go v1.32.0 or later.
-const _ = grpc.SupportPackageIsVersion7
+// Requires gRPC-Go v1.62.0 or later.
+const _ = grpc.SupportPackageIsVersion8
 
 const (
 	Geyser_Subscribe_FullMethodName          = "/geyser.Geyser/Subscribe"
@@ -50,11 +50,12 @@ func NewGeyserClient(cc grpc.ClientConnInterface) GeyserClient {
 }
 
 func (c *geyserClient) Subscribe(ctx context.Context, opts ...grpc.CallOption) (Geyser_SubscribeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Geyser_ServiceDesc.Streams[0], Geyser_Subscribe_FullMethodName, opts...)
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Geyser_ServiceDesc.Streams[0], Geyser_Subscribe_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &geyserSubscribeClient{stream}
+	x := &geyserSubscribeClient{ClientStream: stream}
 	return x, nil
 }
 
@@ -81,8 +82,9 @@ func (x *geyserSubscribeClient) Recv() (*SubscribeUpdate, error) {
 }
 
 func (c *geyserClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PongResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PongResponse)
-	err := c.cc.Invoke(ctx, Geyser_Ping_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Geyser_Ping_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -90,8 +92,9 @@ func (c *geyserClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.C
 }
 
 func (c *geyserClient) GetLatestBlockhash(ctx context.Context, in *GetLatestBlockhashRequest, opts ...grpc.CallOption) (*GetLatestBlockhashResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetLatestBlockhashResponse)
-	err := c.cc.Invoke(ctx, Geyser_GetLatestBlockhash_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Geyser_GetLatestBlockhash_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +102,9 @@ func (c *geyserClient) GetLatestBlockhash(ctx context.Context, in *GetLatestBloc
 }
 
 func (c *geyserClient) GetBlockHeight(ctx context.Context, in *GetBlockHeightRequest, opts ...grpc.CallOption) (*GetBlockHeightResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetBlockHeightResponse)
-	err := c.cc.Invoke(ctx, Geyser_GetBlockHeight_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Geyser_GetBlockHeight_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -108,8 +112,9 @@ func (c *geyserClient) GetBlockHeight(ctx context.Context, in *GetBlockHeightReq
 }
 
 func (c *geyserClient) GetSlot(ctx context.Context, in *GetSlotRequest, opts ...grpc.CallOption) (*GetSlotResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetSlotResponse)
-	err := c.cc.Invoke(ctx, Geyser_GetSlot_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Geyser_GetSlot_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -117,8 +122,9 @@ func (c *geyserClient) GetSlot(ctx context.Context, in *GetSlotRequest, opts ...
 }
 
 func (c *geyserClient) IsBlockhashValid(ctx context.Context, in *IsBlockhashValidRequest, opts ...grpc.CallOption) (*IsBlockhashValidResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(IsBlockhashValidResponse)
-	err := c.cc.Invoke(ctx, Geyser_IsBlockhashValid_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Geyser_IsBlockhashValid_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -126,8 +132,9 @@ func (c *geyserClient) IsBlockhashValid(ctx context.Context, in *IsBlockhashVali
 }
 
 func (c *geyserClient) GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetVersionResponse)
-	err := c.cc.Invoke(ctx, Geyser_GetVersion_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Geyser_GetVersion_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +194,7 @@ func RegisterGeyserServer(s grpc.ServiceRegistrar, srv GeyserServer) {
 }
 
 func _Geyser_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(GeyserServer).Subscribe(&geyserSubscribeServer{stream})
+	return srv.(GeyserServer).Subscribe(&geyserSubscribeServer{ServerStream: stream})
 }
 
 type Geyser_SubscribeServer interface {
