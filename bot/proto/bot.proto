@@ -62,7 +62,7 @@ message BotOut {
     bytes keypair_pubkey = 3;
     string exit = 4;
     StatusTime status = 5;
-
+    BotOut keep_alive = 6;
   }
 }
 

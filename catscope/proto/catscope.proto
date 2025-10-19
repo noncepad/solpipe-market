@@ -37,7 +37,12 @@ message Subscription{
   uint32 depth = 4;
   uint64 last_slot = 5;
 }
-
+message SubscriptionResponse{
+  oneof response{
+    uint32 ack_subscription = 1;
+    Commit commit = 2;
+  }
+}
 message ChainUpdate {
   oneof update {
     Slot slot = 1;
@@ -56,7 +61,7 @@ message Edge{
   uint32 weight = 3;
 }
 
-message SubscriptionResponse {
+message Commit {
   uint64 slot = 1;
   repeated Account list_account = 2;
 }
