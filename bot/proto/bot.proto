@@ -32,7 +32,8 @@ message BotHeader {
   bytes hash = 1;
   // make the size as 0 when there is no bot being stored in the validator.
   uint32 size = 2;
-  repeated string args = 3;
+  map<string, string> env = 3;
+  repeated string args = 4;
 }
 message BotBody { bytes data = 1; }
 
